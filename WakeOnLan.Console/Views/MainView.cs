@@ -1,14 +1,10 @@
 using System.ComponentModel;
 using System.Net;
-using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Net.NetworkInformation;
 using WakeOnLan.Console.Models;
 using WakeOnLan.Console.Extensions;
 using WakeOnLan.Library.Extensions;
-using WakeOnLan.Library;
-using System.Windows.Forms;
-using System.Security.Cryptography.X509Certificates;
 
 namespace WakeOnLan.Console.Views
 {
@@ -33,7 +29,7 @@ namespace WakeOnLan.Console.Views
         public bool IsLocal { get => _IsLocal; set => SetProperty(ref _IsLocal, value); }
 
         // 接続先一覧
-        private List<ConnectionItem> _Connections = ConnectionItem.GetLocalIPv4Connection();
+        private List<ConnectionItem> _Connections = ConnectionItem.GetConnections();
         public List<ConnectionItem> Connections { get => _Connections; set => SetProperty(ref _Connections, value); }
 
         // 選択された接続先
@@ -122,8 +118,9 @@ namespace WakeOnLan.Console.Views
             // 表示切り替え
             btnLocal.Bind(nameof(btnLocal.Clicked), this, nameof(IsLocal)).SetConveter(x => !(bool)x);
             btnRemote.Bind(nameof(btnRemote.Clicked), this, nameof(IsLocal));
-            txtIPAddress.Bind(nameof(txtIPAddress.Enabled), this, nameof(IsManual));
-            txtHostName.Bind(nameof(txtHostName.Enabled), this, nameof(IsManual));
+            txtIPAddress.Bind(nameof(txtIPAddress.ReadOnly), this, nameof(IsManual)).SetConveter(x => !(bool)x);
+            txtSubnetMask.Bind(nameof(txtSubnetMask.ReadOnly), this, nameof(IsManual)).SetConveter(x => !(bool)x);
+            txtHostName.Bind(nameof(txtHostName.ReadOnly), this, nameof(IsManual)).SetConveter(x => !(bool)x);
         }
 
         // 送信
@@ -147,11 +144,6 @@ namespace WakeOnLan.Console.Views
             }
             else
             {
-                if (SubnetMask is null)
-                {
-                    ShowErrorMsg("サブネットマスクの形式が不正です");
-                    return;
-                }
                 Library.WakeOnLan.Boot(MACAddress, IPAddressExtension.GetBroadCastAddress(SelectedConnection.IPAddress, (int)SubnetMask));
             }
         }

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using WakeOnLan.Library.Extensions;
 
 namespace WakeOnLan.Console.Models
 {
@@ -15,14 +16,13 @@ namespace WakeOnLan.Console.Models
             IPAddress = _address;
         }
 
-        public static List<ConnectionItem> GetLocalIPv4Connection()
+        public static List<ConnectionItem> GetConnections()
         {
             // 手動設定を追加
             List<ConnectionItem> _list = [new ConnectionItem("手動", null)];
-            _list.AddRange(Dns.GetHostAddresses(Dns.GetHostName())
-                .Where(x => x.AddressFamily.Equals(AddressFamily.InterNetwork))
-                .Select(x => new ConnectionItem(x.ToString(), x))
-                .ToList());
+            _list.AddRange(IPAddressExtension.GetLocalIPv4()
+                .Select(x => new ConnectionItem(
+                    $"{x.Address}/{x.PrefixLength}",IPAddressExtension.GetBroadCastAddress(x.Address, x.IPv4Mask))));
             return _list;
         }
     }
