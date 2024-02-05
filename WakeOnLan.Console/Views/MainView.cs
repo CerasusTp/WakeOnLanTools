@@ -6,6 +6,8 @@ using WakeOnLan.Console.Models;
 using WakeOnLan.Console.Extensions;
 using WakeOnLan.Library.Extensions;
 using System.Net.Sockets;
+using Reactive.Bindings;
+using System.Windows.Forms;
 
 namespace WakeOnLan.Console.Views
 {
@@ -33,64 +35,9 @@ namespace WakeOnLan.Console.Views
         private List<ConnectionItem> _Connections = ConnectionItem.GetConnections();
         public List<ConnectionItem> Connections { get => _Connections; set => SetProperty(ref _Connections, value); }
 
-        // 選択された接続先
-        private ConnectionItem? _SelectedConnection;
-        public ConnectionItem? SelectedConnection
-        {
-            get => _SelectedConnection;
-            set
-            {
-                SetProperty(ref _SelectedConnection, value);
-                OnPropertyChanged(nameof(IsManual));
-            }
-        }
-
-        // MACアドレス
-        private string? _StrMACAddress;
-        public string? StrMACAddress { get => _StrMACAddress; set => SetProperty(ref _StrMACAddress, value); }
-
-        // 宛先IPアドレス
-        private string? _StrIPAddress;
-        public string? StrIPAddress { get => _StrIPAddress; set => SetProperty(ref _StrIPAddress, value); }
-
-        // 宛先サブネットマスク
-        private string? _StrSubnetMask;
-        public string? StrSubnetMask { get => _StrSubnetMask; set => SetProperty(ref _StrSubnetMask, value); }
-
-        // 手動判定
-        public bool IsManual { get => SelectedConnection is null || SelectedConnection.IPAddress is null; }
-
-        // 送信アドレス
-        public PhysicalAddress? MACAddress
-        {
-            get
-            {
-                PhysicalAddress.TryParse(StrMACAddress, out PhysicalAddress? _macAddress);
-                return _macAddress;
-            }
-        }
-
-        public IPAddress? Address
-        {
-            get
-            {
-                IPAddress.TryParse(StrIPAddress, out IPAddress? _Address);
-                return _Address;
-            }
-        }
-
-        public int? SubnetMask
-        {
-            get
-            {
-                if (int.TryParse(StrSubnetMask, out int _mask) && 1 <= _mask || _mask <= 32)
-                {
-                    return _mask;
-                };
-                return null;
-            }
-        }
-
+        // 宛先選択モード
+        private bool _IsManual;
+        public bool IsManual { get => _IsManual; set => SetProperty(ref _IsManual, value); }
 
         public MainView()
         {
@@ -99,22 +46,21 @@ namespace WakeOnLan.Console.Views
             Init();
             // バインドする
             SetBinding();
+            // マニュアルモード判定
+            CheckIsManual();
         }
 
         // 初期情報設定
         public void Init()
         {
             cmbConnection.DisplayMember = nameof(ConnectionItem.Display);
+            cmbConnection.ValueMember = nameof(ConnectionItem.IPAddress);
         }
 
         // FormControlとプロパティをバインド
         private void SetBinding()
         {
-            txtMacAddress.Bind(nameof(txtMacAddress.Text), this, nameof(StrMACAddress));
-            txtIPAddress.Bind(nameof(txtIPAddress.Text), this, nameof(StrIPAddress));
-            txtSubnetMask.Bind(nameof(txtSubnetMask.Text), this, nameof(StrSubnetMask));
             cmbConnection.Bind(nameof(cmbConnection.DataSource), this, nameof(Connections));
-            cmbConnection.Bind(nameof(cmbConnection.SelectedItem), this, nameof(SelectedConnection));
 
             // 表示切り替え
             btnLocal.Bind(nameof(btnLocal.Clicked), this, nameof(IsLocal)).SetConveter(x => !(bool)x);
@@ -122,43 +68,74 @@ namespace WakeOnLan.Console.Views
             txtIPAddress.Bind(nameof(txtIPAddress.ReadOnly), this, nameof(IsManual)).SetConveter(x => !(bool)x);
             txtSubnetMask.Bind(nameof(txtSubnetMask.ReadOnly), this, nameof(IsManual)).SetConveter(x => !(bool)x);
             txtHostName.Bind(nameof(txtHostName.ReadOnly), this, nameof(IsManual)).SetConveter(x => !(bool)x);
+            btnHostName.Bind(nameof(btnHostName.Enabled), this, nameof(IsManual));
         }
 
-        // 送信
-        private void ClickBootButton(object sender, EventArgs e)
+        // エラーチェック
+        private bool CheckHasError()
         {
-            // MACアドレスチェック
-            if (MACAddress is null)
-            {
-                ShowErrorMsg("MACアドレスが不正です");
-                return;
-            }
+            // エラー1つでもあればtrue
+            bool _hasError = false;
 
+            if (!PhysicalAddress.TryParse(txtMacAddress.Text, out _))
+                AddError(txtMacAddress, "MACアドレスが不正です", ref _hasError);
             if (IsManual)
             {
-                if (Address is null || SubnetMask is null)
+                if (!IPAddress.TryParse(txtIPAddress.Text, out _))
+                    AddError(txtIPAddress, "IPv4が不正です", ref _hasError);
+                if (int.TryParse(txtSubnetMask.Text, out int _mask))
                 {
-                    ShowErrorMsg("IPv4アドレスかサブネットマスクの形式が不正です");
-                    return;
+                    if (_mask < 1 || 32 < _mask)
+                        AddError(txtSubnetMask, "サブネットマスクが範囲外です（1-32）", ref _hasError);
                 }
-                Library.WakeOnLan.Boot(MACAddress, IPAddressExtension.GetBroadCastAddress(Address, (int)SubnetMask));
+                else
+                {
+                    AddError(txtSubnetMask, "サブネットマスクが不正です", ref _hasError);
+                }
             }
-            else
-            {
-                Library.WakeOnLan.Boot(MACAddress, IPAddressExtension.GetBroadCastAddress(SelectedConnection.IPAddress, (int)SubnetMask));
-            }
+            return _hasError;
         }
 
-        // エラーメッセージ表示
-        private static void ShowErrorMsg(string _message) =>
-            MessageBox.Show(_message, "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        // エラー追加
+        private void AddError(Control _control, string _message)
+        {
+            MainViewError.SetError(_control, _message);
+            ShowErrorMessage(_message);
+        }
 
+        private void AddError(Control _control, string _message, ref bool _hasError)
+        {
+            AddError(_control, _message);
+            _hasError = true;
+        }
+
+        // エラーメッセージボックス表示
+        private void ShowErrorMessage(string _message) =>
+            MessageBox.Show(this, _message, "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+        // マニュアルモード判定
+        private void CheckIsManual()
+        {
+            // エラー情報クリア
+            MainViewError.Clear();
+            IsManual = cmbConnection.SelectedValue == null;
+        }
+
+        // ボタン処理
         // モード切り替えボタンのクリック処理
         private void SwitchModeButton(object sender, EventArgs e) => IsLocal = !IsLocal;
 
         // ホスト名からIP取得処理
         private void GetIPAddressButton(object sender, EventArgs e)
         {
+            // エラー情報クリア
+            MainViewError.Clear();
+            // ホスト名が入力されているかチェック
+            if (string.IsNullOrEmpty(txtHostName.Text))
+            {
+                AddError(txtHostName, "ホスト名を入力してください");
+                return;
+            }
             // 取得したアドレスを格納
             IPAddress[] _address;
             try
@@ -168,12 +145,45 @@ namespace WakeOnLan.Console.Views
             }
             catch (SocketException)
             {
-                ShowErrorMsg("不明なホスト名です");
+                ShowErrorMessage("不明なホスト名です");
                 return;
             }
-            if (_address.Length == 0) { ShowErrorMsg("IPv4アドレスが存在しません"); }
-            else if (_address.Length != 1) { ShowErrorMsg("同ホスト名でIPv4アドレスが複数存在します"); }
-            else { txtIPAddress.Text = _address[0].ToString(); }
+            if (_address.Length == 0)
+                AddError(txtIPAddress, "IPv4アドレスが存在しません");
+            else if (_address.Length != 1)
+                AddError(txtIPAddress, "同ホスト名でIPv4アドレスが複数存在します");
+            else 
+                txtIPAddress.Text = _address[0].ToString();
         }
+
+        // 送信
+        private void ClickBootButton(object sender, EventArgs e)
+        {
+            // エラー情報クリア
+            MainViewError.Clear();
+            // エラーチェック
+            if (CheckHasError())
+            {
+                ShowErrorMessage("設定された値に不正な値があります");
+                return;
+            }
+
+            // WakeOnLan送信
+            if (cmbConnection.SelectedValue is null)
+            {
+                Library.WakeOnLan.Boot(
+                    PhysicalAddress.Parse(txtMacAddress.Text),
+                    IPAddressExtension.GetBroadCastAddress(IPAddress.Parse(txtIPAddress.Text), int.Parse(txtSubnetMask.Text)));
+            }
+            else
+            {
+                Library.WakeOnLan.Boot(
+                    PhysicalAddress.Parse(txtMacAddress.Text), (IPAddress)cmbConnection.SelectedValue);
+            }
+        }
+
+        // ネットワークのコンボボックスが変更されたとき
+        private void ChangeConnectionCombobox(object sender, EventArgs e) =>
+            CheckIsManual();
     }
 }

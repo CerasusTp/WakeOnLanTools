@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             btnLocal = new Controls.CustomButton();
             btnRemote = new Controls.CustomButton();
             grpCommon = new GroupBox();
@@ -43,7 +44,9 @@
             txtMacAddress = new TextBox();
             label1 = new Label();
             btnBoot = new Button();
+            MainViewError = new ErrorProvider(components);
             grpCommon.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)MainViewError).BeginInit();
             SuspendLayout();
             // 
             // btnLocal
@@ -123,6 +126,7 @@
             cmbConnection.Name = "cmbConnection";
             cmbConnection.Size = new Size(178, 29);
             cmbConnection.TabIndex = 7;
+            cmbConnection.SelectionChangeCommitted += ChangeConnectionCombobox;
             // 
             // label4
             // 
@@ -191,6 +195,10 @@
             btnBoot.UseVisualStyleBackColor = true;
             btnBoot.Click += ClickBootButton;
             // 
+            // MainViewError
+            // 
+            MainViewError.ContainerControl = this;
+            // 
             // MainView
             // 
             AutoScaleDimensions = new SizeF(9F, 21F);
@@ -206,6 +214,7 @@
             Text = "WakeOnLan Console";
             grpCommon.ResumeLayout(false);
             grpCommon.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)MainViewError).EndInit();
             ResumeLayout(false);
         }
 
@@ -226,5 +235,6 @@
         private TextBox txtSubnetMask;
         private Label label5;
         private Button btnHostName;
+        private ErrorProvider MainViewError;
     }
 }
