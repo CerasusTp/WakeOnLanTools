@@ -31,6 +31,7 @@
             btnLocal = new Controls.CustomButton();
             btnRemote = new Controls.CustomButton();
             grpCommon = new GroupBox();
+            btnHostName = new Button();
             txtSubnetMask = new TextBox();
             label5 = new Label();
             cmbConnection = new ComboBox();
@@ -71,6 +72,7 @@
             // 
             // grpCommon
             // 
+            grpCommon.Controls.Add(btnHostName);
             grpCommon.Controls.Add(txtSubnetMask);
             grpCommon.Controls.Add(label5);
             grpCommon.Controls.Add(cmbConnection);
@@ -87,6 +89,16 @@
             grpCommon.TabIndex = 5;
             grpCommon.TabStop = false;
             grpCommon.Text = "宛先";
+            // 
+            // btnHostName
+            // 
+            btnHostName.Location = new Point(405, 132);
+            btnHostName.Name = "btnHostName";
+            btnHostName.Size = new Size(55, 29);
+            btnHostName.TabIndex = 10;
+            btnHostName.Text = "取得";
+            btnHostName.UseVisualStyleBackColor = true;
+            btnHostName.Click += GetIPAddressButton;
             // 
             // txtSubnetMask
             // 
@@ -125,7 +137,7 @@
             // 
             txtHostName.Location = new Point(120, 132);
             txtHostName.Name = "txtHostName";
-            txtHostName.Size = new Size(340, 29);
+            txtHostName.Size = new Size(257, 29);
             txtHostName.TabIndex = 5;
             // 
             // label3
@@ -213,5 +225,6 @@
         private Label label4;
         private TextBox txtSubnetMask;
         private Label label5;
+        private Button btnHostName;
     }
 }

@@ -5,6 +5,7 @@ using System.Net.NetworkInformation;
 using WakeOnLan.Console.Models;
 using WakeOnLan.Console.Extensions;
 using WakeOnLan.Library.Extensions;
+using System.Net.Sockets;
 
 namespace WakeOnLan.Console.Views
 {
@@ -34,9 +35,9 @@ namespace WakeOnLan.Console.Views
 
         // 選択された接続先
         private ConnectionItem? _SelectedConnection;
-        public ConnectionItem? SelectedConnection 
-        { 
-            get => _SelectedConnection; 
+        public ConnectionItem? SelectedConnection
+        {
+            get => _SelectedConnection;
             set
             {
                 SetProperty(ref _SelectedConnection, value);
@@ -58,7 +59,7 @@ namespace WakeOnLan.Console.Views
 
         // 手動判定
         public bool IsManual { get => SelectedConnection is null || SelectedConnection.IPAddress is null; }
-        
+
         // 送信アドレス
         public PhysicalAddress? MACAddress
         {
@@ -154,5 +155,25 @@ namespace WakeOnLan.Console.Views
 
         // モード切り替えボタンのクリック処理
         private void SwitchModeButton(object sender, EventArgs e) => IsLocal = !IsLocal;
+
+        // ホスト名からIP取得処理
+        private void GetIPAddressButton(object sender, EventArgs e)
+        {
+            // 取得したアドレスを格納
+            IPAddress[] _address;
+            try
+            {
+                _address = Dns.GetHostEntry(txtHostName.Text).AddressList.ToList()
+                                .Where(x => x.AddressFamily == AddressFamily.InterNetwork).ToArray();
+            }
+            catch (SocketException)
+            {
+                ShowErrorMsg("不明なホスト名です");
+                return;
+            }
+            if (_address.Length == 0) { ShowErrorMsg("IPv4アドレスが存在しません"); }
+            else if (_address.Length != 1) { ShowErrorMsg("同ホスト名でIPv4アドレスが複数存在します"); }
+            else { txtIPAddress.Text = _address[0].ToString(); }
+        }
     }
 }
