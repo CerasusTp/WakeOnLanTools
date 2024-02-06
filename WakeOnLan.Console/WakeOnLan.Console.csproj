@@ -6,7 +6,12 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>Resources\WakeOnLan.Console.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\WakeOnLan.Console.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ReactiveProperty" Version="9.3.4" />

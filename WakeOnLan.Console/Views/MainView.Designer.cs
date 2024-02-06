@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainView));
             btnLocal = new Controls.CustomButton();
             btnRemote = new Controls.CustomButton();
             grpCommon = new GroupBox();
@@ -209,6 +210,7 @@
             Controls.Add(btnRemote);
             Controls.Add(btnLocal);
             Font = new Font("Yu Gothic UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 128);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(4);
             Name = "MainView";
             Text = "WakeOnLan Console";
